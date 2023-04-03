@@ -32,6 +32,8 @@ def account_connection(browser):
 def go_to_search_link(browser, link = os.getenv('LINKEDIN_SEARCH_LINK')):
     browser.get(f"{link}&page=1")
     
+
+
 def run():
     browser = get_browser()
     account_connection(browser)
