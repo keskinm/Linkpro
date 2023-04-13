@@ -32,12 +32,29 @@ def account_connection(browser):
 def go_to_search_link(browser, link = os.getenv('LINKEDIN_SEARCH_LINK')):
     browser.get(f"{link}&page=1")
     
+def list_of_profils(browser):
+    li_elements = browser.find_elements(By.CSS_SELECTOR, 'li.reusable-search__result-container div.entity-result')
+    for li_element in li_elements:
+        connect_or_follow = li_element.find_element(By.CSS_SELECTOR, 'div.entity-result__actions.entity-result__divider').text
+        if connect_or_follow == "Se connecter":
+            a_element = li_element.find_element(By.CSS_SELECTOR, 'a')
+            linkedin_profil_link = a_element.get_attribute('href')
+            print(linkedin_profil_link)
+            name = a_element.text.strip()
+            print(name)
 
+        elif connect_or_follow == "Suivre":
+            a_element = li_element.find_element(By.CSS_SELECTOR, 'a.app-aware-link')
+            linkedin_profil_link = a_element.get_attribute('href')
+            print(linkedin_profil_link)
+            name = a_element.text.strip()
+            print(name)
 
 def run():
     browser = get_browser()
     account_connection(browser)
     go_to_search_link(browser)
+    list_of_profils(browser)
 
 
 if __name__ == "__main__":
