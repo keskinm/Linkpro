@@ -1,9 +1,13 @@
 import os
 from pathlib import Path
+from pprint import pprint
+from bs4 import BeautifulSoup
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait # type: ignore
+from selenium.webdriver.support import expected_conditions as EC
 
 from dotenv import load_dotenv
 
@@ -31,30 +35,70 @@ def account_connection(browser):
 
 def go_to_search_link(browser, link = os.getenv('LINKEDIN_SEARCH_LINK')):
     browser.get(f"{link}&page=1")
-    
-def list_of_profils(browser):
-    li_elements = browser.find_elements(By.CSS_SELECTOR, 'li.reusable-search__result-container div.entity-result')
-    for li_element in li_elements:
-        connect_or_follow = li_element.find_element(By.CSS_SELECTOR, 'div.entity-result__actions.entity-result__divider').text
-        if connect_or_follow == "Se connecter":
-            a_element = li_element.find_element(By.CSS_SELECTOR, 'a')
-            linkedin_profil_link = a_element.get_attribute('href')
-            print(linkedin_profil_link)
-            name = a_element.text.strip()
-            print(name)
 
-        elif connect_or_follow == "Suivre":
-            a_element = li_element.find_element(By.CSS_SELECTOR, 'a.app-aware-link')
-            linkedin_profil_link = a_element.get_attribute('href')
-            print(linkedin_profil_link)
-            name = a_element.text.strip()
-            print(name)
+#Clique sur le "Se connecter" du "Plus"
+def click_connect_on_plus(browser):
+    soup = BeautifulSoup(browser.page_source, "html.parser")
+    div_plus = soup.find('div', {'class': 'ph5'})
+    div_dropdown = div_plus.find('div', {'class': 'artdeco-dropdown__content-inner'}) # type: ignore
+    toutli = div_dropdown.find_all('li') # type: ignore
+    #Trouver l'id "Se connecter" et cliquer dessus
+    for li_textes in toutli:
+        try:
+            li_texte = li_textes.find('span')
+            if li_texte.text.strip() == "Se connecter":
+                id_seconnecter = li_textes.find('div')['id']
+                browser.find_element(By.ID, id_seconnecter).click() # type: ignore
+                WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'artdeco-modal__actionbar')))
+                return
+        except:
+            continue
+
+def get_all_profil_in_the_page(browser):
+    all_profils_list = browser.find_elements(By.CSS_SELECTOR, 'li.reusable-search__result-container div.entity-result')
+    all_profils_info = []
+    for profil_content in all_profils_list:
+        connect_or_follow = profil_content.find_element(By.CSS_SELECTOR, 'div.entity-result__actions.entity-result__divider').text
+        linkedin_profil_link = profil_content.find_element(By.CSS_SELECTOR, 'a').get_attribute('href')
+        full_name = profil_content.find_element(By.XPATH, './/span[@dir="ltr"]/span[@aria-hidden="true"]').text
+        first_name = full_name.split()[0]
+        last_name = full_name.split()[1]
+        profil = {
+            "full_name": full_name,
+            "first_name": first_name,
+            "last_name": last_name,
+            "linkedin_profil_link": linkedin_profil_link,
+            "connect_or_follow": connect_or_follow
+            }
+        all_profils_info.append(profil)
+    return all_profils_info
+
+def connect_to_profil(browser):
+    all_profils_info = get_all_profil_in_the_page(browser)
+    for profil in all_profils_info:
+        if profil["connect_or_follow"] == "Se connecter":
+            browser.get(profil["linkedin_profil_link"])
+            connect_button = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.pvs-profile-actions button.artdeco-button')))
+            connect_button.click()
+            add_note = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Ajouter une note"]')))
+            add_note.click()
+            custom_message = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.ID, 'custom-message')))
+            message = os.getenv('MESSAGE').replace("{first_name}", profil["first_name"])
+            custom_message.send_keys(message)
+            send_invitation = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Envoyer maintenant"]')))
+            send_invitation.click()
+
+
+def save_in_db():
+    pass
 
 def run():
     browser = get_browser()
     account_connection(browser)
     go_to_search_link(browser)
-    list_of_profils(browser)
+    connect_to_profil(browser)
+    save_in_db()
+
 
 
 if __name__ == "__main__":
