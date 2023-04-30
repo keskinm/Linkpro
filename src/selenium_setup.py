@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from pprint import pprint
+import sqlite3
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
@@ -73,7 +74,7 @@ def get_all_profil_in_the_page(browser):
         all_profils_info.append(profil)
     return all_profils_info
 
-def connect_to_profil(browser):
+def connect_to_profil(browser, cursor):
     all_profils_info = get_all_profil_in_the_page(browser)
     for profil in all_profils_info:
         if profil["connect_or_follow"] == "Se connecter":
@@ -87,18 +88,43 @@ def connect_to_profil(browser):
             custom_message.send_keys(message)
             send_invitation = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Envoyer maintenant"]')))
             send_invitation.click()
+        
+        elif profil["connect_or_follow"] == "Suire":
+            browser.get(profil["linkedin_profil_link"])
+            plus_action_button = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.pvs-profile-actions button.artdeco-dropdown__trigger')))
+            plus_action_button.click()
+            click_connect_on_plus(browser)
+            add_note = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Ajouter une note"]')))
+            add_note.click()
+            custom_message = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.ID, 'custom-message')))
+            message = os.getenv('MESSAGE').replace("{first_name}", profil["first_name"])
+            custom_message.send_keys(message)
+            send_invitation = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Envoyer maintenant"]')))
+            send_invitation.click()
+        
+        save_in_db(cursor, profil["full_name"], profil["first_name"], profil["last_name"], profil["linkedin_profil_link"], profil["connect_or_follow"])
 
 
-def save_in_db():
-    pass
+def save_in_db(cursor, full_name, first_name, last_name, linkedin_profil_link, connect_or_follow):
+    cursor.execute("INSERT INTO linkedin_leads (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, is_message_sent) VALUES (?, ?, ?, ?, ?)",
+                    (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, True))
+
+def connect_db():
+    conn = sqlite3.connect('linkedin_leads.db')
+    cursor = conn.cursor()
+    return cursor, conn
+
+def close_db(conn):
+    conn.commit()
+    conn.close()
 
 def run():
+    cursor = connect_db()[0]
     browser = get_browser()
     account_connection(browser)
     go_to_search_link(browser)
-    connect_to_profil(browser)
-    save_in_db()
-
+    connect_to_profil(browser, cursor)
+    close_db(connect_db()[1])
 
 
 if __name__ == "__main__":
