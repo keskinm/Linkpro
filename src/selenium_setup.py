@@ -1,6 +1,6 @@
+from datetime import datetime
 import os
 from pathlib import Path
-from pprint import pprint
 import sqlite3
 from bs4 import BeautifulSoup
 
@@ -55,12 +55,14 @@ def click_connect_on_plus(browser):
         except:
             continue
 
-def get_all_profil_in_the_page(browser):
+def get_all_profil_in_the_page(browser, cursor):
     all_profils_list = browser.find_elements(By.CSS_SELECTOR, 'li.reusable-search__result-container div.entity-result')
     all_profils_info = []
     for profil_content in all_profils_list:
         connect_or_follow = profil_content.find_element(By.CSS_SELECTOR, 'div.entity-result__actions.entity-result__divider').text
         linkedin_profil_link = profil_content.find_element(By.CSS_SELECTOR, 'a').get_attribute('href')
+        if check_database(cursor, linkedin_profil_link):
+            continue
         full_name = profil_content.find_element(By.XPATH, './/span[@dir="ltr"]/span[@aria-hidden="true"]').text
         first_name = full_name.split()[0]
         last_name = full_name.split()[1]
@@ -74,9 +76,15 @@ def get_all_profil_in_the_page(browser):
         all_profils_info.append(profil)
     return all_profils_info
 
-def connect_to_profil(browser, cursor):
-    all_profils_info = get_all_profil_in_the_page(browser)
+def connect_to_profil(browser):
+    conn = sqlite3.connect('linkedin_prospection.db')
+    cursor = conn.cursor()
+    all_profils_info = get_all_profil_in_the_page(browser, cursor)
     for profil in all_profils_info:
+        if check_number_of_message_sent_today(cursor) >= int(os.getenv('MAX_MESSAGE_PER_DAY')):
+            print("Vous avez atteint le nombre maximum de messages à envoyer aujourd'hui")
+            exit()
+
         if profil["connect_or_follow"] == "Se connecter":
             browser.get(profil["linkedin_profil_link"])
             connect_button = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.pvs-profile-actions button.artdeco-button')))
@@ -89,7 +97,7 @@ def connect_to_profil(browser, cursor):
             send_invitation = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Envoyer maintenant"]')))
             send_invitation.click()
         
-        elif profil["connect_or_follow"] == "Suire":
+        elif profil["connect_or_follow"] == "Suivre":
             browser.get(profil["linkedin_profil_link"])
             plus_action_button = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.pvs-profile-actions button.artdeco-dropdown__trigger')))
             plus_action_button.click()
@@ -102,28 +110,42 @@ def connect_to_profil(browser, cursor):
             send_invitation = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Envoyer maintenant"]')))
             send_invitation.click()
         
-        save_in_db(cursor, profil["full_name"], profil["first_name"], profil["last_name"], profil["linkedin_profil_link"], profil["connect_or_follow"])
+        else : 
+            print("Erreur")
+            print(profil)
+            print(50*"-")
+            continue
 
+        save_in_db(cursor, conn, profil["full_name"], profil["first_name"], profil["last_name"], profil["linkedin_profil_link"], profil["connect_or_follow"])
+        exit()
 
-def save_in_db(cursor, full_name, first_name, last_name, linkedin_profil_link, connect_or_follow):
-    cursor.execute("INSERT INTO linkedin_leads (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, is_message_sent) VALUES (?, ?, ?, ?, ?)",
-                    (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, True))
-
-def connect_db():
-    conn = sqlite3.connect('linkedin_leads.db')
-    cursor = conn.cursor()
-    return cursor, conn
+def save_in_db(cursor, conn, full_name, first_name, last_name, linkedin_profil_link, connect_or_follow):
+    today = datetime.now().date()
+    cursor.execute("INSERT INTO linkedin_leads (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, is_message_sent, last_message_sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, True, today))
+    conn.commit()
+    print("profil sauvegarder")
 
 def close_db(conn):
     conn.commit()
     conn.close()
 
+
+def check_database(cursor,linkedin_link):
+    cursor.execute('''SELECT * FROM linkedin_leads WHERE linkedin_profil_link = ?''', (linkedin_link,))
+    return bool(result := cursor.fetchone())
+
+def check_number_of_message_sent_today(cursor):
+    today = datetime.now().date()
+    cursor.execute('''SELECT * FROM linkedin_leads WHERE last_message_sent_at = ?''', (today,))
+    return len(cursor.fetchall())
+
+
 def run():
-    cursor = connect_db()[0]
     browser = get_browser()
     account_connection(browser)
     go_to_search_link(browser)
-    connect_to_profil(browser, cursor)
+    connect_to_profil(browser)
     close_db(connect_db()[1])
 
 
