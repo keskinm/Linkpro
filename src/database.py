@@ -3,7 +3,7 @@ import sqlite3
 def create_search_links_infos_table(cursor, conn):
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS search_links_infos (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     current_page INTEGER DEFAULT 1,
     max_pages INTEGER,
     search_link TEXT
