@@ -1,5 +1,6 @@
 import sqlite3
 
+
 def create_search_links_infos_table(cursor, conn):
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS search_links_infos (
@@ -10,6 +11,7 @@ def create_search_links_infos_table(cursor, conn):
     );
     ''')
     conn.commit()
+
 
 def create_linkedin_leads_table(cursor, conn):
     cursor.execute('''
@@ -26,8 +28,9 @@ def create_linkedin_leads_table(cursor, conn):
     ''')
     conn.commit()
 
+
 if __name__ == "__main__":
-    conn = sqlite3.connect('linkedin_prospection.db')
+    conn = sqlite3.connect('../linkedin_prospection.db')
     cursor = conn.cursor()
     create_search_links_infos_table(cursor=cursor, conn=conn)
     create_linkedin_leads_table(cursor=cursor, conn=conn)

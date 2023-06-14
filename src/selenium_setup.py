@@ -1,11 +1,10 @@
-import random
 import time
 from datetime import datetime
 import os
 from pathlib import Path
-from pprint import pprint
 import sqlite3
-import time
+from random import random
+
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
@@ -84,7 +83,6 @@ def connect_to_profil(browser):
     conn = sqlite3.connect('linkedin_prospection.db')
     cursor = conn.cursor()
     all_profils_info = get_all_profil_in_the_page(browser, cursor)
-    pprint(all_profils_info)
     for profil in all_profils_info:
         if check_number_of_message_sent_today(cursor) >= int(os.getenv('MAX_MESSAGE_PER_DAY')):
             print("Vous avez atteint le nombre maximum de messages à envoyer aujourd'hui")
@@ -131,24 +129,6 @@ def connect_to_profil(browser):
 def wait_random_time():
     wait_time = random.uniform(8, 16)
     time.sleep(wait_time)
-
-
-def save_in_db(cursor, conn, full_name, first_name, last_name, linkedin_profil_link, connect_or_follow):
-    today = datetime.now().date()
-    cursor.execute("INSERT INTO linkedin_leads (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, is_message_sent, last_message_sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, True, today))
-    conn.commit()
-    print(f"Le profil de {full_name} à été sauvegardé en base.")
-
-def check_database(cursor,linkedin_link):
-    cursor.execute('''SELECT * FROM linkedin_leads WHERE linkedin_profil_link = ?''', (linkedin_link,))
-    return bool(result := cursor.fetchone())
-
-def check_number_of_message_sent_today(cursor):
-    today = datetime.now().date()
-    cursor.execute('''SELECT * FROM linkedin_leads WHERE last_message_sent_at = ?''', (today,))
-    return len(cursor.fetchall())
-
 
 def run():
     browser = get_browser()
