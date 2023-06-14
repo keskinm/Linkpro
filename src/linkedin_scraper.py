@@ -31,10 +31,12 @@ class LinkedinScraper:
         self.browser.find_element(By.ID, 'password').send_keys(os.getenv('LINKEDIN_PASSWORD'))
         self.browser.find_element(By.CSS_SELECTOR, 'button[type="submit"]').click()
 
-    def go_to_search_link(self, link):
-        self.browser.get(link)
+    def go_to_search_link(self, link, current_page):
+        self.browser.get(f"{link}&page={current_page}")
 
     def get_all_profiles_on_page(self):
+        WebDriverWait(self.browser, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'li.reusable-search__result-container div.entity-result')))
         all_profiles_list = self.browser.find_elements(By.CSS_SELECTOR,
                                                        'li.reusable-search__result-container div.entity-result')
         all_profiles_info = []

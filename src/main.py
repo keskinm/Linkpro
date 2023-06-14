@@ -30,6 +30,12 @@ if __name__ == "__main__":
 
         profiles = scraper.get_all_profiles_on_page()
         for profile in profiles:
+
+            if db_manager.check_number_of_messages_sent_today() >= int(os.getenv('MAX_MESSAGE_PER_DAY')):
+                print("Vous avez atteint le nombre maximum de messages à envoyer aujourd'hui")
+                message_limit_reached = True
+                break
+
             if not db_manager.check_lead(profile["linkedin_profile_link"]):
                 scraper.connect_to_profile(profile["linkedin_profile_link"])
                 scraper.send_invitation_with_message(os.getenv('MESSAGE').replace("{first_name}", profile["first_name"]))
