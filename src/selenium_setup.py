@@ -1,11 +1,10 @@
-import random
 import time
 from datetime import datetime
 import os
 from pathlib import Path
-from pprint import pprint
 import sqlite3
-import time
+from random import random
+
 from bs4 import BeautifulSoup
 
 from selenium import webdriver
@@ -90,15 +89,12 @@ def get_all_profil_in_the_page(browser, cursor):
 def connect_to_profil(browser):
     conn = sqlite3.connect('linkedin_prospection.db')
     cursor = conn.cursor()
-    while check_number_of_message_sent_today(cursor) < int(os.getenv('MAX_MESSAGE_PER_DAY')):
-        check_and_save_link_info(conn=conn, cursor=cursor )
-        all_profils_info = get_all_profil_in_the_page(browser, cursor)
-        
-        pprint(all_profils_info)
-        for profil in all_profils_info:
-            if check_number_of_message_sent_today(cursor) >= int(os.getenv('MAX_MESSAGE_PER_DAY')):
-                print("Vous avez atteint le nombre maximum de messages à envoyer aujourd'hui")
-                break
+    all_profils_info = get_all_profil_in_the_page(browser, cursor)
+    pprint(all_profils_info)
+    for profil in all_profils_info:
+        if check_number_of_message_sent_today(cursor) >= int(os.getenv('MAX_MESSAGE_PER_DAY')):
+            print("Vous avez atteint le nombre maximum de messages à envoyer aujourd'hui")
+            exit()
 
             if profil["connect_or_follow"] == "Se connecter":
                 browser.get(profil["linkedin_profil_link"])
@@ -159,32 +155,6 @@ def check_number_of_message_sent_today(cursor):
     today = datetime.now().date()
     cursor.execute('''SELECT * FROM linkedin_leads WHERE last_message_sent_at = ?''', (today,))
     return len(cursor.fetchall())
-
-def save_current_page():
-    pass
-
-def check_and_save_link_info(cursor, conn):
-    link = os.getenv('LINKEDIN_SEARCH_LINK')
-    current_page = 1
-    max_pages = os.getenv("MAX_PAGES")
-    cursor.execute("SELECT * FROM search_links_infos WHERE search_link = ?", (link,))
-    result = cursor.fetchone()
-    if result is None:
-        cursor.execute("INSERT INTO search_links_infos (search_link, current_page, max_pages) VALUES (?, ?, ?)", (link, current_page, max_pages ))
-        conn.commit()
-
-def go_to_next_page(browser, cursor, conn):
-    increment_current_page(cursor, conn)
-    link = os.getenv('LINKEDIN_SEARCH_LINK')
-    cursor.execute("SELECT current_page FROM search_links_infos WHERE search_link = ?", (link,))
-    current_page = cursor.fetchone()
-    browser.get(f"{link}&page={current_page}")
-
-
-def increment_current_page(cursor, conn):
-    link = os.getenv('LINKEDIN_SEARCH_LINK')
-    cursor.execute("UPDATE search_links_infos SET current_page = current_page + 1 WHERE search_link = ?", (link,))
-    conn.commit()
 
 
 def run():
