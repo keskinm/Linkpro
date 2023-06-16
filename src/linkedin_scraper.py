@@ -57,7 +57,7 @@ class LinkedinScraper:
             all_profiles_info.append(profile)
         return all_profiles_info
 
-    def connect_to_profile(self, profile_link):
+    def connect_to_profil(self, profile_link):
         self.browser.get(profile_link)
         connect_button = WebDriverWait(self.browser, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '.pvs-profile-actions button.artdeco-button')))

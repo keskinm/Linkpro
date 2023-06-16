@@ -1,4 +1,5 @@
 from pathlib import Path
+import time
 
 from database_manager import DatabaseManager
 from linkedin_scraper import LinkedinScraper
@@ -28,18 +29,17 @@ if __name__ == "__main__":
         current_page = db_manager.get_current_page(link)
         scraper.go_to_search_link(link, current_page)
 
-        profiles = scraper.get_all_profiles_on_page()
-        for profile in profiles:
-
+        profils = scraper.get_all_profiles_on_page()
+        for profil in profils:
             if db_manager.check_number_of_messages_sent_today() >= int(os.getenv('MAX_MESSAGE_PER_DAY')):
                 print("Vous avez atteint le nombre maximum de messages à envoyer aujourd'hui")
                 message_limit_reached = True
                 break
 
-            if not db_manager.check_lead(profile["linkedin_profile_link"]):
-                scraper.connect_to_profile(profile["linkedin_profile_link"])
-                scraper.send_invitation_with_message(os.getenv('MESSAGE').replace("{first_name}", profile["first_name"]))
-                db_manager.save_lead(profile["full_name"], profile["first_name"], profile["last_name"], profile["linkedin_profile_link"], profile["connect_or_follow"])
+            if (not db_manager.check_lead(profil["linkedin_profile_link"])) and (profil["connect_or_follow"]):
+                scraper.connect_to_profil(profil["linkedin_profile_link"])
+                scraper.send_invitation_with_message(os.getenv('MESSAGE').replace("{first_name}", profil["first_name"]))
+                db_manager.save_lead(profil["full_name"], profil["first_name"], profil["last_name"], profil["linkedin_profile_link"], profil["connect_or_follow"])
                 scraper.wait_random_time()
         if not message_limit_reached:
             db_manager.increment_current_page(link)
