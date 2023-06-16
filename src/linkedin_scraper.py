@@ -1,3 +1,4 @@
+from pprint import pprint
 import random
 import time
 
@@ -37,25 +38,26 @@ class LinkedinScraper:
     def get_all_profiles_on_page(self):
         WebDriverWait(self.browser, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'li.reusable-search__result-container div.entity-result')))
-        all_profiles_list = self.browser.find_elements(By.CSS_SELECTOR,
+        all_profils_list = self.browser.find_elements(By.CSS_SELECTOR,
                                                        'li.reusable-search__result-container div.entity-result')
-        all_profiles_info = []
-        for profile_content in all_profiles_list:
+        all_profils_info = []
+        for profile_content in all_profils_list:
             connect_or_follow = profile_content.find_element(By.CSS_SELECTOR,
                                                              'div.entity-result__actions.entity-result__divider').text
             linkedin_profile_link = profile_content.find_element(By.CSS_SELECTOR, 'a').get_attribute('href')
             full_name = profile_content.find_element(By.XPATH, './/span[@dir="ltr"]/span[@aria-hidden="true"]').text
             first_name = full_name.split()[0]
             last_name = full_name.split()[1]
-            profile = {
+            profil = {
                 "full_name": full_name,
                 "first_name": first_name,
                 "last_name": last_name,
                 "linkedin_profile_link": linkedin_profile_link,
                 "connect_or_follow": connect_or_follow
             }
-            all_profiles_info.append(profile)
-        return all_profiles_info
+            pprint(profil)
+            all_profils_info.append(profil)
+        return all_profils_info
 
     def connect_to_profil(self, profile_link):
         self.browser.get(profile_link)
