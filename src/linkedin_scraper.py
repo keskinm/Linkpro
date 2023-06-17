@@ -1,4 +1,3 @@
-from pprint import pprint
 import random
 import time
 
@@ -55,7 +54,6 @@ class LinkedinScraper:
                 "linkedin_profile_link": linkedin_profile_link,
                 "connect_or_follow": connect_or_follow
             }
-            pprint(profil)
             all_profils_info.append(profil)
         return all_profils_info
 
@@ -81,21 +79,35 @@ class LinkedinScraper:
     def wait_random_time(self):
         wait_time = random.uniform(8, 16)
         time.sleep(wait_time)
-
-    def click_connect_on_plus(self):
+    
+    def _click_plus(self):
+        # Récupère l'ID du "plus" pour cliquer dessus
         soup = BeautifulSoup(self.browser.page_source, "html.parser")
-        div_plus = soup.find('div', {'class': 'ph5'})
-        div_dropdown = div_plus.find('div', {'class': 'artdeco-dropdown__content-inner'})  # type: ignore
-        toutli = div_dropdown.find_all('li')  # type: ignore
-        # Trouver l'id "Se connecter" et cliquer dessus
-        for li_textes in toutli:
-            try:
-                li_texte = li_textes.find('span')
-                if li_texte.text.strip() == "Se connecter":
-                    id_seconnecter = li_textes.find('div')['id']
-                    self.browser.find_element(By.ID, id_seconnecter).click()  # type: ignore
-                    WebDriverWait(self.browser, 5).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, 'artdeco-modal__actionbar')))
-                    return
-            except:
-                continue
+        zone = soup.find('div', {'class': 'ph5'})
+        WebDriverWait(self.browser, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'artdeco-dropdown')))
+        zone.find_all('div', {'class': 'artdeco-dropdown'}) # type: ignore
+        id_a_cliquer = zone.select_one("div[class*=artdeco-dropdown]")['id'] # type: ignore
+        self.browser.find_element(By.ID, id_a_cliquer).click()
+        time.sleep(1)
+        return
+
+    def click_connect_on_plus(self, profil_link):
+        self.browser.get(profil_link)
+        # Clique sur le bouton "Plus"
+        plus_button = WebDriverWait(self.browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.ph5 .artdeco-dropdown__trigger')))
+        plus_button.click()
+
+        # Attends que le menu déroulant soit chargé
+        WebDriverWait(self.browser, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.artdeco-dropdown__content-inner')))
+
+        # Trouve tous les éléments du menu déroulant
+        dropdown_items = self.browser.find_elements(By.CSS_SELECTOR, '.artdeco-dropdown__content-inner')
+
+        # Trouve l'élément "Se connecter" et clique dessus
+        for item in dropdown_items:
+            if "Se connecter" in item.text:
+                item.click()
+                break
+
+    def close_browser(self):
+        self.browser.quit()
