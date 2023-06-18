@@ -22,12 +22,13 @@ if __name__ == "__main__":
     max_pages = int(os.getenv("MAX_PAGES")) # type: ignore
 
     db_manager.check_and_save_link_info(link, max_pages)
+    search_link_id = db_manager.get_search_link_id(link)
 
     message_limit_reached = False
     for _ in range(max_pages):
         if message_limit_reached:
             break
-        current_page = db_manager.get_current_page(link)[0]
+        current_page = db_manager.get_current_page(link)
         scraper.go_to_search_link(link, current_page)
 
         profils = scraper.get_all_profiles_on_page()
@@ -45,7 +46,7 @@ if __name__ == "__main__":
                 else:
                     continue
                 scraper.send_invitation_with_message(os.getenv('MESSAGE').replace("{first_name}", profil["first_name"]))
-                db_manager.save_lead(profil["full_name"], profil["first_name"], profil["last_name"], profil["linkedin_profile_link"], profil["connect_or_follow"])
+                db_manager.save_lead(profil["full_name"], profil["first_name"], profil["last_name"], profil["linkedin_profile_link"], profil["connect_or_follow"], search_link_id)
                 scraper.wait_random_time()
         if not message_limit_reached:
             db_manager.increment_current_page(link)

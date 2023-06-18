@@ -32,16 +32,17 @@ class DatabaseManager:
         linkedin_profil_link TEXT UNIQUE,
         connect_or_follow VARCHAR(50),
         is_message_sent BOOLEAN DEFAULT FALSE,
-        last_message_sent_at DATETIME DEFAULT NULL
+        last_message_sent_at DATETIME DEFAULT NULL,
+        search_link_id INTEGER
         );
         ''')
         self.conn.commit()
 
-    def save_lead(self, full_name, first_name, last_name, linkedin_profil_link, connect_or_follow):
+    def save_lead(self, full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, search_link_id):
         today = datetime.now().date()
         self.cursor.execute(
-            "INSERT INTO linkedin_leads (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, is_message_sent, last_message_sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, True, today))
+            "INSERT INTO linkedin_leads (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, is_message_sent, last_message_sent_at, search_link_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (full_name, first_name, last_name, linkedin_profil_link, connect_or_follow, True, today, search_link_id))
         self.conn.commit()
 
     def check_lead(self, linkedin_link):
@@ -65,9 +66,21 @@ class DatabaseManager:
 
     def get_current_page(self, link):
         self.cursor.execute("SELECT current_page FROM search_links_infos WHERE search_link = ?", (link,))
-        return self.cursor.fetchone()
+        return self.cursor.fetchone()[0]
+    
+    def get_search_link_id(self, link):
+        self.cursor.execute("SELECT id FROM search_links_infos WHERE search_link = ?", (link,))
+        return self.cursor.fetchone()[0]
 
     def increment_current_page(self, link):
         self.cursor.execute("UPDATE search_links_infos SET current_page = current_page + 1 WHERE search_link = ?",
                             (link,))
+        self.conn.commit()
+
+    #Fonction utile pour ajouter une colonne a une table
+    def add_search_link_id_column(self):
+        self.cursor.execute('''
+        ALTER TABLE linkedin_leads
+        ADD COLUMN search_link_id INTEGER;
+        ''')
         self.conn.commit()
