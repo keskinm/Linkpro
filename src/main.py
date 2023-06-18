@@ -27,7 +27,7 @@ if __name__ == "__main__":
     for _ in range(max_pages):
         if message_limit_reached:
             break
-        current_page = db_manager.get_current_page(link)
+        current_page = db_manager.get_current_page(link)[0]
         scraper.go_to_search_link(link, current_page)
 
         profils = scraper.get_all_profiles_on_page()
