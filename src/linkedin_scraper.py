@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 
+from utils import remove_emojis
+
 class LinkedinScraper:
     def __init__(self, driver_path):
         load_dotenv()
@@ -45,6 +47,7 @@ class LinkedinScraper:
                                                              'div.entity-result__actions.entity-result__divider').text
             linkedin_profile_link = profile_content.find_element(By.CSS_SELECTOR, 'a').get_attribute('href')
             full_name = profile_content.find_element(By.XPATH, './/span[@dir="ltr"]/span[@aria-hidden="true"]').text
+            full_name = remove_emojis(full_name)
             first_name = full_name.split()[0]
             last_name = full_name.split()[1]
             profil = {
