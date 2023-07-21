@@ -11,7 +11,8 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 
-from utils import remove_emojis
+from .utils import remove_emojis
+
 
 class LinkedinScraper:
     def __init__(self, driver_path):
