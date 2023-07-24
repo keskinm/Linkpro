@@ -5,3 +5,6 @@ linkedin_prospection.db
 scratch.py
 scratch2.py
 src/__pycache__
+app/ihm/dist/*
+app/ihm/build/*
+app/ihm/gui.spec
