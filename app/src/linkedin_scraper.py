@@ -46,6 +46,8 @@ class LinkedinScraper:
         for profile_content in all_profils_list:
             connect_or_follow = profile_content.find_element(By.CSS_SELECTOR,
                                                              'div.entity-result__actions.entity-result__divider').text
+            if connect_or_follow not in ["Se connecter", "Suivre"]:
+                continue
             linkedin_profile_link = profile_content.find_element(By.CSS_SELECTOR, 'a').get_attribute('href')
             full_name = profile_content.find_element(By.XPATH, './/span[@dir="ltr"]/span[@aria-hidden="true"]').text
             full_name = remove_emojis(full_name)
