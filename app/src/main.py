@@ -56,7 +56,11 @@ class LinkedinBot:
                     scraper.send_invitation_with_message(self.message.replace("{first_name}", profile["first_name"]))
                     db_manager.save_lead(profile["full_name"], profile["first_name"], profile["last_name"], profile["linkedin_profile_link"], profile["connect_or_follow"], search_link_id)
                     scraper.wait_random_time()
-            if not message_limit_reached:
+            if not message_limit_reached and int(current_page)+1 < self.max_pages:
                 db_manager.increment_current_page(self.search_link)
+            else:
+                message_limit_reached = True
+                print("Tous les profils du lien ont été parcourus.")
+                break
 
         scraper.close_browser()
