@@ -67,5 +67,5 @@ app = QApplication([])
 window = MainWindow()
 window.show()
 
-# Run the application
+# Run the application -> python -m app.ihm.gui
 app.exec()
