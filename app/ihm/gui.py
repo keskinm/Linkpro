@@ -1,5 +1,3 @@
-# Let's start by importing the necessary modules from PySide
-
 from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButton, QLineEdit, QTextEdit
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt

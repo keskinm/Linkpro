@@ -8,3 +8,11 @@ src/__pycache__
 app/ihm/dist/*
 app/ihm/build/*
 app/ihm/gui.spec
+app/ihm/__pycache__/gui.cpython-311.pyc
+app/ihm/__pycache__/gui.cpython-311.pyc
+app/src/__pycache__/__init__.cpython-311.pyc
+app/src/__pycache__/linkedin_scraper.cpython-311.pyc
+app/src/__pycache__/main.cpython-311.pyc
+app/src/__pycache__/database_manager.cpython-311.pyc
+app/src/__pycache__/utils.cpython-311.pyc
+app/ihm/__pycache__/gui.cpython-311.pyc
