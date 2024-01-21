@@ -2,31 +2,28 @@ import random
 import time
 
 from bs4 import BeautifulSoup
-from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from dotenv import load_dotenv
 import os
-from pathlib import Path
 
-from .utils import remove_emojis
+from utils import remove_emojis
+from selenium import webdriver
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from webdriver_manager.firefox import GeckoDriverManager
+
+driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
 
 
 class LinkedinScraper:
-    def __init__(self, driver_path):
+    def __init__(self):
         load_dotenv()
-        self.browser = self._get_browser(driver_path)
+        self.browser = self._get_browser()
 
-    def _get_browser(self, driver_path):
-        return webdriver.Chrome(driver_path, chrome_options=self._selenium_options())
-
-    def _selenium_options(self):
-        chrome_options = Options()
-        chrome_options.add_experimental_option("detach", True)
-        chrome_options.add_argument("--start-maximized")
-        return chrome_options
+    def _get_browser(self):
+        return webdriver.Firefox(service=webdriver.firefox.service.Service(GeckoDriverManager().install()))
 
     def login(self):
         self.browser.get("https://www.linkedin.com/uas/login")
@@ -39,9 +36,9 @@ class LinkedinScraper:
 
     def get_all_profiles_on_page(self):
         WebDriverWait(self.browser, 5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'li.reusable-search__result-container div.entity-result')))
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'li.reusable-search__result-container')))
         all_profils_list = self.browser.find_elements(By.CSS_SELECTOR,
-                                                       'li.reusable-search__result-container div.entity-result')
+                                                      'li.reusable-search__result-container')
         all_profils_info = []
         for profile_content in all_profils_list:
             connect_or_follow = profile_content.find_element(By.CSS_SELECTOR,
@@ -49,10 +46,18 @@ class LinkedinScraper:
             if connect_or_follow not in ["Se connecter", "Suivre"]:
                 continue
             linkedin_profile_link = profile_content.find_element(By.CSS_SELECTOR, 'a').get_attribute('href')
-            full_name = profile_content.find_element(By.XPATH, './/span[@dir="ltr"]/span[@aria-hidden="true"]').text
-            full_name = remove_emojis(full_name)
-            first_name = full_name.split()[0]
-            last_name = full_name.split()[1]
+
+            # Modification ici pour le nom complet
+            full_name_element = profile_content.find_element(By.CSS_SELECTOR,
+                                                             'span.entity-result__title-text a span[dir="ltr"]')
+            full_name = full_name_element.text.strip()  # Retire les espaces superflus
+            full_name = remove_emojis(full_name)  # Enlève les emojis si nécessaire
+
+            # Extraction du prénom et du nom si possible
+            name_parts = full_name.split()
+            first_name = name_parts[0] if len(name_parts) > 0 else ""
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
+
             profil = {
                 "full_name": full_name,
                 "first_name": first_name,
@@ -66,7 +71,7 @@ class LinkedinScraper:
     def connect_to_profil(self, profile_link):
         self.browser.get(profile_link)
         connect_button = WebDriverWait(self.browser, 5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '.pvs-profile-actions button.artdeco-button')))
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action')))
         connect_button.click()
 
     def send_invitation_with_message(self, message):

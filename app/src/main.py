@@ -1,32 +1,28 @@
 import os
-from pathlib import Path
-from .database_manager import DatabaseManager
-from .linkedin_scraper import LinkedinScraper
 
-def get_driver_path():
-    return str(Path(__file__).parent.parent / "utils" / "chromedriver.exe")
+from dotenv import load_dotenv
+
+from database_manager import DatabaseManager
+from linkedin_scraper import LinkedinScraper
+
+load_dotenv()
+
 
 class LinkedinBot:
-    def __init__(self, username, password, search_link, max_pages, max_messages, message):
-        self.username = username
-        self.password = password
-        self.search_link = search_link
-        self.max_pages = max_pages
-        self.max_messages = max_messages
-        self.message = message
+    def __init__(self):
+        self.username = os.getenv("LINKEDIN_USERNAME")
+        self.password = os.getenv("LINKEDIN_PASSWORD")
+        self.search_link = os.getenv("LINKEDIN_SEARCH_LINK")
+        self.max_pages = int(os.getenv("MAX_PAGES"))
+        self.max_messages = int(os.getenv("MAX_MESSAGE_PER_DAY"))
+        self.message = os.getenv("MESSAGE")
 
     def start(self):
-        os.environ["LINKEDIN_USERNAME"] = self.username
-        os.environ["LINKEDIN_PASSWORD"] = self.password
-        os.environ["LINKEDIN_SEARCH_LINK"] = self.search_link
-        os.environ["MAX_PAGES"] = str(self.max_pages)
-        os.environ["MAX_MESSAGE_PER_DAY"] = str(self.max_messages)
-        os.environ["MESSAGE"] = self.message
 
         db_manager = DatabaseManager('linkedin_prospection.db')
         db_manager.create_tables()
 
-        scraper = LinkedinScraper(get_driver_path())
+        scraper = LinkedinScraper()
         scraper.login()
 
         db_manager.check_and_save_link_info(self.search_link, self.max_pages)
@@ -64,3 +60,8 @@ class LinkedinBot:
                 db_manager.increment_current_page(self.search_link)
 
         scraper.close_browser()
+
+
+if __name__ == "__main__":
+    bot = LinkedinBot()
+    bot.start()
