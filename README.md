@@ -2,6 +2,7 @@
 
 Creer un fichier .env et mettre les informations suivante:
 
+LINKEDIN_USERNAME
 LINKEDIN_PASSWORD
 LINKEDIN_SEARCH_LINK
 MAX_PAGES
