@@ -90,16 +90,15 @@ class LinkedinScraper:
     def wait_random_time(self):
         wait_time = random.uniform(8, 16)
         time.sleep(wait_time)
-    
+
     def _click_plus(self):
-        # Récupère l'ID du "plus" pour cliquer dessus
-        soup = BeautifulSoup(self.browser.page_source, "html.parser")
-        zone = soup.find('div', {'class': 'ph5'})
-        WebDriverWait(self.browser, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'artdeco-dropdown')))
-        zone.find_all('div', {'class': 'artdeco-dropdown'}) # type: ignore
-        id_a_cliquer = zone.select_one("div[class*=artdeco-dropdown]")['id'] # type: ignore
-        self.browser.find_element(By.ID, id_a_cliquer).click()
-        time.sleep(1)
+        # Attend que le bouton "Plus" soit présent et cliquable
+        plus_button = WebDriverWait(self.browser, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(@aria-label, 'Plus d’actions')]"))
+        )
+        # Clique sur le bouton "Plus"
+        plus_button.click()
+        time.sleep(1)  # Petite pause pour laisser le temps à l'interface de réagir
         return
 
     def click_connect_on_plus(self, profil_link):
@@ -112,7 +111,7 @@ class LinkedinScraper:
         WebDriverWait(self.browser, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.artdeco-dropdown__content-inner')))
 
         # Trouve tous les éléments du menu déroulant
-        dropdown_items = self.browser.find_elements(By.CSS_SELECTOR, '.artdeco-dropdown__content-inner')
+        dropdown_items = self.browser.find_elements(By.CSS_SELECTOR, '.artdeco-dropdown__content-inner li div.artdeco-dropdown__item')
 
         # Trouve l'élément "Se connecter" et clique dessus
         for item in dropdown_items:
