@@ -37,6 +37,7 @@ class LinkedinBot:
 
             profiles = scraper.get_all_profiles_on_page()
             for profile in profiles:
+                print(f"Nombre de message envoyé aujourd'hui : {db_manager.check_number_of_messages_sent_today()}")
                 if db_manager.check_number_of_messages_sent_today() >= self.max_messages:
                     print("Vous avez atteint le nombre maximum de messages à envoyer aujourd'hui")
                     message_limit_reached = True
