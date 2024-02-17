@@ -45,10 +45,11 @@ class LinkedinBot:
 
                 if (not db_manager.check_lead(profile["linkedin_profile_link"])) and (profile["connect_or_follow"]):
                     scraper.go_to_profile_page(profile["linkedin_profile_link"])
-                    try :
-                        if (profile["connect_or_follow"] == "Se connecter") and (scraper.first_button_text() == "Se connecter"):
+                    first_button = scraper.first_button_text()
+                    try:
+                        if (profile["connect_or_follow"] == "Se connecter") and (first_button == "Se connecter"):
                             scraper.connect_to_profil()
-                        elif (profile["connect_or_follow"] == "Suivre") or (scraper.first_button_text() == "Suivre"):
+                        elif (profile["connect_or_follow"] == "Suivre") or (first_button == "Suivre"):
                             scraper.click_connect_on_plus()
                     except :
                         continue
