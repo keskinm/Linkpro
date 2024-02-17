@@ -68,11 +68,18 @@ class LinkedinScraper:
             all_profils_info.append(profil)
         return all_profils_info
 
-    def connect_to_profil(self, profile_link):
+    def go_to_profile_page(self, profile_link):
         self.browser.get(profile_link)
+
+    def connect_to_profil(self):
         connect_button = WebDriverWait(self.browser, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action')))
         connect_button.click()
+
+    def first_button_text(self): #connaitre le texte du premier bouton d'action sur le profil
+        button = WebDriverWait(self.browser, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action')))
+        return button.text
 
     def send_invitation_with_message(self, message):
         add_note = WebDriverWait(self.browser, 5).until(
@@ -101,8 +108,7 @@ class LinkedinScraper:
         time.sleep(1)  # Petite pause pour laisser le temps à l'interface de réagir
         return
 
-    def click_connect_on_plus(self, profil_link):
-        self.browser.get(profil_link)
+    def click_connect_on_plus(self):
         # Clique sur le bouton "Plus"
         plus_button = WebDriverWait(self.browser, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.ph5 .artdeco-dropdown__trigger')))
         plus_button.click()

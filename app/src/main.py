@@ -44,11 +44,12 @@ class LinkedinBot:
                     break
 
                 if (not db_manager.check_lead(profile["linkedin_profile_link"])) and (profile["connect_or_follow"]):
+                    scraper.go_to_profile_page(profile["linkedin_profile_link"])
                     try :
-                        if profile["connect_or_follow"] == "Se connecter":
-                            scraper.connect_to_profil(profile["linkedin_profile_link"])
-                        elif profile["connect_or_follow"] == "Suivre":
-                            scraper.click_connect_on_plus(profile["linkedin_profile_link"])
+                        if (profile["connect_or_follow"] == "Se connecter") and (scraper.first_button_text() == "Se connecter"):
+                            scraper.connect_to_profil()
+                        elif (profile["connect_or_follow"] == "Suivre") or (scraper.first_button_text() == "Suivre"):
+                            scraper.click_connect_on_plus()
                     except :
                         continue
                     scraper.send_invitation_with_message(self.message.replace("{first_name}", profile["first_name"]))
