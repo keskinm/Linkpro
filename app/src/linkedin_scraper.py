@@ -69,6 +69,15 @@ class LinkedinScraper:
     def go_to_profile_page(self, profile_link):
         self.browser.get(profile_link)
 
+    def is_open_to_work(self):
+        try:
+            profile_image = WebDriverWait(self.browser, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'img.pv-top-card-profile-picture__image')))
+            if '#OPEN_TO_WORK' in profile_image.get_attribute('alt'):
+                return True
+        except:
+            return False
+
     def connect_to_profil(self):
         connect_button = WebDriverWait(self.browser, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '.artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action')))

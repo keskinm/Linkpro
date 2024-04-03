@@ -16,6 +16,7 @@ class LinkedinBot:
         self.max_pages = int(os.getenv("MAX_PAGES"))
         self.max_messages = int(os.getenv("MAX_MESSAGE_PER_DAY"))
         self.message = os.getenv("MESSAGE")
+        self.check_open_to_work = os.getenv("CHECK_OPEN_TO_WORK", "False") == "True"
 
     def start(self):
 
@@ -45,6 +46,8 @@ class LinkedinBot:
 
                 if (not db_manager.check_lead(profile["linkedin_profile_link"])) and (profile["connect_or_follow"]):
                     scraper.go_to_profile_page(profile["linkedin_profile_link"])
+                    if self.check_open_to_work and scraper.is_open_to_work():
+                        continue
                     first_button = scraper.first_button_text()
                     try:
                         if (profile["connect_or_follow"] == "Se connecter") and (first_button == "Se connecter"):
