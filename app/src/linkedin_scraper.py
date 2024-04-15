@@ -29,6 +29,21 @@ class LinkedinScraper:
         self.browser.find_element(By.ID, 'password').send_keys(os.getenv('LINKEDIN_PASSWORD'))
         self.browser.find_element(By.CSS_SELECTOR, 'button[type="submit"]').click()
 
+    def check_for_authentication(self):
+        try:
+            WebDriverWait(self.browser, 5).until(
+                EC.presence_of_element_located((By.ID, 'input__email_verification_pin'))
+            )
+            print("Page d'authentification détectée. En attente du code de vérification.")
+            return True
+        except:
+            return False
+
+    def ensure_authenticated(self):
+        if self.check_for_authentication():
+            while self.check_for_authentication():
+                time.sleep(15)
+
     def go_to_search_link(self, link, current_page):
         self.browser.get(f"{link}&page={current_page}")
 

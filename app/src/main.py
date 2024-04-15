@@ -25,6 +25,7 @@ class LinkedinBot:
 
         scraper = LinkedinScraper()
         scraper.login()
+        scraper.ensure_authenticated()
 
         db_manager.check_and_save_link_info(self.search_link, self.max_pages)
         search_link_id = db_manager.get_search_link_id(self.search_link)
