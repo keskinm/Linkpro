@@ -110,7 +110,7 @@ class LinkedinScraper:
         custom_message = WebDriverWait(self.browser, 5).until(EC.presence_of_element_located((By.ID, 'custom-message')))
         custom_message.send_keys(message)
         send_invitation = WebDriverWait(self.browser, 5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Envoyer maintenant"]')))
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'button[aria-label="Envoyer une invitation"]')))
         send_invitation.click()
 
     def go_to_next_page(self, link, current_page):
