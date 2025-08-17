@@ -50,16 +50,27 @@ class LinkedinBot:
                     if self.check_open_to_work and scraper.is_open_to_work():
                         continue
                     first_button = scraper.first_button_text()
+                    did_connect = False
                     try:
                         if (profile["connect_or_follow"] == "Se connecter") and (first_button == "Se connecter"):
                             scraper.connect_to_profil()
+                            did_connect = True
                         elif (profile["connect_or_follow"] == "Suivre") or (first_button == "Suivre"):
                             scraper.click_connect_on_plus()
-                    except :
+                            did_connect = True
+                    except Exception:
                         continue
-                    scraper.send_invitation_with_message(self.message.replace("{first_name}", profile["first_name"]))
-                    db_manager.save_lead(profile["full_name"], profile["first_name"], profile["last_name"], profile["linkedin_profile_link"], profile["connect_or_follow"], search_link_id)
-                    scraper.wait_random_time()
+                    if did_connect:
+                        scraper.send_invitation_with_message(self.message.replace("{first_name}", profile["first_name"]))
+                        db_manager.save_lead(
+                            profile["full_name"],
+                            profile["first_name"],
+                            profile["last_name"],
+                            profile["linkedin_profile_link"],
+                            profile["connect_or_follow"],
+                            search_link_id
+                        )
+                        scraper.wait_random_time()
 
             if int(current_page)+1 > self.max_pages:
                 print("Tous les profils du lien ont été parcourus.")

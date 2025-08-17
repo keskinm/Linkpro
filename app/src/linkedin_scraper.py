@@ -1,7 +1,7 @@
 import random
 import time
 import os
-
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -138,23 +138,39 @@ class LinkedinScraper:
 
     def first_button_text(self):
         """
-        Return the text of the first action button on the profile and normalise English labels.
+        Retrieve the connection/follow button via its aria-label or inner text.
+        Normalises the label to 'Se connecter' or 'Suivre'.
         """
-        button = WebDriverWait(self.browser, 5).until(
-            EC.presence_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action",
-                )
+        try:
+            button = WebDriverWait(self.browser, 10).until(
+                EC.presence_of_element_located((
+                    By.XPATH,
+                    "//button[contains(@aria-label,'Invitez') or "
+                    "contains(@aria-label,'Se connecter') or "
+                    "contains(@aria-label,'Connect') or "
+                    "contains(@aria-label,'Suivre') or "
+                    "contains(@aria-label,'Follow')]"
+                ))
             )
-        )
-        text = button.text.strip()
-        lower = text.lower()
-        if "connect" in lower:
+            label = button.get_attribute("aria-label") or ""
+            if not label:
+                try:
+                    label = button.find_element(
+                        By.CSS_SELECTOR, "span.artdeco-button__text"
+                    ).text.strip()
+                except Exception:
+                    label = ""
+            if not label:
+                label = button.text.strip()
+        except TimeoutException:
             return "Se connecter"
-        if "follow" in lower:
+
+        lower = label.lower()
+        if "suivre" in lower or "follow" in lower:
             return "Suivre"
-        return text
+        if "invitez" in lower or "connect" in lower or "se connecter" in lower:
+            return "Se connecter"
+        return label.split()[0]
 
     def send_invitation_with_message(self, message):
         add_note = WebDriverWait(self.browser, 5).until(
