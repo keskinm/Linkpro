@@ -126,15 +126,26 @@ class LinkedinScraper:
         return False
 
     def connect_to_profil(self):
-        connect_button = WebDriverWait(self.browser, 5).until(
-            EC.presence_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    ".artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view.pvs-profile-actions__action",
+        """Click on the profile's 'Se connecter' button."""
+        try:
+            connect_button = WebDriverWait(self.browser, 10).until(
+                EC.presence_of_element_located(
+                    (
+                        By.XPATH,
+                        "//button[.//span[contains(@class,'artdeco-button__text') and normalize-space()='Se connecter']]"
+                    )
                 )
             )
-        )
-        connect_button.click()
+            self.browser.execute_script(
+                "arguments[0].scrollIntoView({block:'center', inline:'center'});",
+                connect_button
+            )
+            try:
+                connect_button.click()
+            except Exception:
+                self.browser.execute_script("arguments[0].click();", connect_button)
+        except TimeoutException:
+            print("Bouton 'Se connecter' introuvable ou non cliquable.")
 
     def first_button_text(self):
         """
@@ -173,16 +184,23 @@ class LinkedinScraper:
         return label.split()[0]
 
     def send_invitation_with_message(self, message):
-        add_note = WebDriverWait(self.browser, 5).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, 'button[aria-label="Ajouter une note"]')
+        # Essayer d'ajouter une note si le bouton existe
+        try:
+            add_note = WebDriverWait(self.browser, 5).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, 'button[aria-label="Ajouter une note"]')
+                )
             )
-        )
-        add_note.click()
-        custom_message = WebDriverWait(self.browser, 5).until(
-            EC.presence_of_element_located((By.ID, "custom-message"))
-        )
-        custom_message.send_keys(message)
+            add_note.click()
+            custom_message = WebDriverWait(self.browser, 5).until(
+                EC.presence_of_element_located((By.ID, "custom-message"))
+            )
+            custom_message.send_keys(message)
+        except TimeoutException:
+            # Si pas de note possible, on passe
+            pass
+
+        # Cliquer dans tous les cas sur le bouton "Envoyer une invitation"
         send_invitation = WebDriverWait(self.browser, 5).until(
             EC.presence_of_element_located(
                 (By.CSS_SELECTOR, 'button[aria-label="Envoyer une invitation"]')
@@ -206,22 +224,25 @@ class LinkedinScraper:
         time.sleep(1)
 
     def click_connect_on_plus(self):
+        # Ouvre le menu "Plus d’actions"
         plus_button = WebDriverWait(self.browser, 5).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, ".ph5 .artdeco-dropdown__trigger")
-            )
+            EC.element_to_be_clickable((
+                By.XPATH,
+                "//button[contains(@aria-label,'Plus d’actions') or contains(@aria-label,'More actions')]"
+            ))
         )
         plus_button.click()
         WebDriverWait(self.browser, 10).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, ".artdeco-dropdown__content-inner")
-            )
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".artdeco-dropdown__content-inner"))
         )
+
+        # Cherche l’option "Se connecter" ou "Connect" dans le menu
         dropdown_items = self.browser.find_elements(
             By.CSS_SELECTOR, ".artdeco-dropdown__content-inner li div.artdeco-dropdown__item"
         )
         for item in dropdown_items:
-            if "Se connecter" in item.text or "Connect" in item.text:
+            text = item.get_attribute("aria-label") or item.text
+            if "Se connecter" in text or "Connect" in text:
                 item.click()
                 break
 
