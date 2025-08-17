@@ -78,35 +78,47 @@ class LinkedinScraper:
 
     def get_all_profiles_on_page(self):
         """
-        Find every profile link on the page and return a list of dicts with name, first_name,
-        last_name and linkedin_profile_link. We default connect_or_follow to 'Se connecter'
-        because we will decide what to do on the profile page itself.
+        Return profile dictionaries with full_name, first_name, last_name and link.
+        Extract the name using accessible_name or aria-label when anchor text is empty.
         """
-        # Wait for at least one profile link to appear
         WebDriverWait(self.browser, 15).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "a[href*='/in/']"))
+            EC.presence_of_element_located((
+                By.XPATH,
+                "//a[contains(@href, '/in/') and @data-test-app-aware-link]"
+            ))
         )
-        anchors = self.browser.find_elements(By.CSS_SELECTOR, "a[href*='/in/']")
+
+        anchors = self.browser.find_elements(
+            By.XPATH, "//a[contains(@href, '/in/') and @data-test-app-aware-link]"
+        )
         profiles = []
         seen = set()
         for a in anchors:
             href = a.get_attribute("href")
-            if not href or "/in/" not in href or href in seen:
+            if not href or href in seen:
                 continue
             seen.add(href)
-            full_name = remove_emojis(a.text.strip())
+
+            full_name = (
+                    a.get_attribute("aria-label") or
+                    getattr(a, "accessible_name", "") or  # Selenium >= 4.0 exposes accessible_name
+                    a.text
+            ).strip()
+            full_name = remove_emojis(full_name)
             parts = full_name.split()
-            first_name = parts[0] if parts else ""
-            last_name = parts[1] if len(parts) > 1 else ""
-            profiles.append(
-                {
-                    "full_name": full_name,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "linkedin_profile_link": href,
-                    "connect_or_follow": "Se connecter",
-                }
-            )
+            if len(parts) < 2:
+                raise RuntimeError(
+                    f"Impossible d’extraire le nom pour {href}: nom incomplet ({full_name!r})"
+                )
+
+            first_name, last_name = parts[0], parts[1]
+            profiles.append({
+                "full_name": full_name,
+                "first_name": first_name,
+                "last_name": last_name,
+                "linkedin_profile_link": href,
+                "connect_or_follow": "Se connecter",
+            })
         return profiles
 
     def go_to_profile_page(self, profile_link):
@@ -126,26 +138,21 @@ class LinkedinScraper:
         return False
 
     def connect_to_profil(self):
-        """Click on the profile's 'Se connecter' button."""
+        """Click on the profile's 'Se connecter' button via JavaScript."""
         try:
             connect_button = WebDriverWait(self.browser, 10).until(
-                EC.presence_of_element_located(
-                    (
-                        By.XPATH,
-                        "//button[.//span[contains(@class,'artdeco-button__text') and normalize-space()='Se connecter']]"
-                    )
-                )
+                EC.presence_of_element_located((
+                    By.XPATH,
+                    "//button[.//span[contains(@class,'artdeco-button__text') and normalize-space()='Se connecter']]"
+                ))
             )
             self.browser.execute_script(
                 "arguments[0].scrollIntoView({block:'center', inline:'center'});",
                 connect_button
             )
-            try:
-                connect_button.click()
-            except Exception:
-                self.browser.execute_script("arguments[0].click();", connect_button)
+            self.browser.execute_script("arguments[0].click();", connect_button)
         except TimeoutException:
-            print("Bouton 'Se connecter' introuvable ou non cliquable.")
+            raise RuntimeError("Impossible de trouver le bouton 'Se connecter' sur ce profil.")
 
     def first_button_text(self):
         """
@@ -184,7 +191,6 @@ class LinkedinScraper:
         return label.split()[0]
 
     def send_invitation_with_message(self, message):
-        # Essayer d'ajouter une note si le bouton existe
         try:
             add_note = WebDriverWait(self.browser, 5).until(
                 EC.presence_of_element_located(
@@ -197,7 +203,6 @@ class LinkedinScraper:
             )
             custom_message.send_keys(message)
         except TimeoutException:
-            # Si pas de note possible, on passe
             pass
 
         # Cliquer dans tous les cas sur le bouton "Envoyer une invitation"
