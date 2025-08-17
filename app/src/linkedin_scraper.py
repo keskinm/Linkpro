@@ -12,6 +12,7 @@ import os
 from utils import remove_emojis
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from webdriver_manager.firefox import GeckoDriverManager
 
 
@@ -21,7 +22,24 @@ class LinkedinScraper:
         self.browser = self._get_browser()
 
     def _get_browser(self):
-        return webdriver.Firefox(service=webdriver.firefox.service.Service(GeckoDriverManager().install()))
+        headless = os.getenv("HEADLESS", "false").lower() in ("1", "true", "yes")
+        candidates = [
+            os.getenv("FIREFOX_BIN"),
+            "/usr/local/bin/firefox-esr",
+            "/usr/bin/firefox-esr",
+            "/usr/bin/firefox",
+            "/snap/bin/firefox",
+        ]
+        firefox_bin = next((p for p in candidates if p and os.path.exists(p)), None)
+
+        opts = FirefoxOptions()
+        if headless:
+            opts.add_argument("-headless")
+        if firefox_bin:
+            opts.binary_location = firefox_bin
+
+        service = FirefoxService(GeckoDriverManager().install())
+        return webdriver.Firefox(service=service, options=opts)
 
     def login(self):
         self.browser.get("https://www.linkedin.com/uas/login")

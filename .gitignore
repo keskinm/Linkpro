@@ -1,6 +1,7 @@
 .venv
 .env
 utils/
+.idea/*
 linkedin_prospection.db
 scratch.py
 scratch2.py
