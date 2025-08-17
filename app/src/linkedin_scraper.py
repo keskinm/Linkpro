@@ -19,10 +19,6 @@ class LinkedinScraper:
         self.browser = self._get_browser()
 
     def _get_browser(self):
-        """
-        Build the Firefox webdriver. We honour HEADLESS and FIREFOX_BIN
-        environment variables and fall back to common binary paths.
-        """
         headless = os.getenv("HEADLESS", "false").lower() in ("1", "true", "yes")
         candidates = [
             os.getenv("FIREFOX_BIN"),
@@ -53,7 +49,7 @@ class LinkedinScraper:
             WebDriverWait(self.browser, 5).until(
                 EC.presence_of_element_located((By.ID, "input__email_verification_pin"))
             )
-            print("Two‑factor page detected. Waiting for code…")
+            print("Two-factor page detected. Waiting for code…")
             return True
         except Exception:
             return False
@@ -63,63 +59,42 @@ class LinkedinScraper:
             while self.check_for_authentication():
                 time.sleep(15)
 
+    def _accept_cookies_if_present(self):
+        try:
+            accept_btn = WebDriverWait(self.browser, 3).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//button[contains(text(),'Accepter') or contains(text(),'Accept')]")
+                )
+            )
+            accept_btn.click()
+            time.sleep(1)
+        except Exception:
+            pass
+
     def go_to_search_link(self, link, current_page):
-        """
-        Load the given LinkedIn search URL with &page=… appended.
-        We always attempt to accept the cookie consent banner afterwards.
-        """
         url = f"{link}&page={current_page}"
         self.browser.get(url)
         self._accept_cookies_if_present()
 
     def get_all_profiles_on_page(self):
         """
-        Extract all available profiles on the current search page.
-        We try a set of selectors in case LinkedIn changes its markup.
-        Only cards with “Se connecter” or “Suivre” buttons are returned.
+        Find every profile link on the page and return a list of dicts with name, first_name,
+        last_name and linkedin_profile_link. We default connect_or_follow to 'Se connecter'
+        because we will decide what to do on the profile page itself.
         """
-        try:
-            WebDriverWait(self.browser, 15).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "li.reusable-search__result-container"))
-            )
-        except Exception:
-            pass
-
-        selectors = [
-            "li.reusable-search__result-container",
-            "div.entity-result",
-            "div.search-result__info",
-        ]
-        cards = []
-        for sel in selectors:
-            cards = self.browser.find_elements(By.CSS_SELECTOR, sel)
-            if cards:
-                break
-
+        # Wait for at least one profile link to appear
+        WebDriverWait(self.browser, 15).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "a[href*='/in/']"))
+        )
+        anchors = self.browser.find_elements(By.CSS_SELECTOR, "a[href*='/in/']")
         profiles = []
-        for card in cards:
-            try:
-                action_el = card.find_element(
-                    By.CSS_SELECTOR, "div.entity-result__actions.entity-result__divider"
-                )
-                connect_or_follow = action_el.text.strip()
-            except Exception:
+        seen = set()
+        for a in anchors:
+            href = a.get_attribute("href")
+            if not href or "/in/" not in href or href in seen:
                 continue
-            if connect_or_follow not in ("Se connecter", "Suivre"):
-                continue
-
-            try:
-                linkedin_profile_link = card.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
-            except Exception:
-                continue
-
-            try:
-                full_name_el = card.find_element(
-                    By.CSS_SELECTOR, 'span.entity-result__title-text a span[dir="ltr"]'
-                )
-                full_name = remove_emojis(full_name_el.text.strip())
-            except Exception:
-                full_name = ""
+            seen.add(href)
+            full_name = remove_emojis(a.text.strip())
             parts = full_name.split()
             first_name = parts[0] if parts else ""
             last_name = parts[1] if len(parts) > 1 else ""
@@ -128,8 +103,8 @@ class LinkedinScraper:
                     "full_name": full_name,
                     "first_name": first_name,
                     "last_name": last_name,
-                    "linkedin_profile_link": linkedin_profile_link,
-                    "connect_or_follow": connect_or_follow,
+                    "linkedin_profile_link": href,
+                    "connect_or_follow": "Se connecter",
                 }
             )
         return profiles
@@ -162,6 +137,9 @@ class LinkedinScraper:
         connect_button.click()
 
     def first_button_text(self):
+        """
+        Return the text of the first action button on the profile and normalise English labels.
+        """
         button = WebDriverWait(self.browser, 5).until(
             EC.presence_of_element_located(
                 (
@@ -170,7 +148,13 @@ class LinkedinScraper:
                 )
             )
         )
-        return button.text
+        text = button.text.strip()
+        lower = text.lower()
+        if "connect" in lower:
+            return "Se connecter"
+        if "follow" in lower:
+            return "Suivre"
+        return text
 
     def send_invitation_with_message(self, message):
         add_note = WebDriverWait(self.browser, 5).until(
@@ -194,8 +178,7 @@ class LinkedinScraper:
         self.browser.get(f"{link}&page={current_page + 1}")
 
     def wait_random_time(self):
-        wait_time = random.uniform(8, 16)
-        time.sleep(wait_time)
+        time.sleep(random.uniform(8, 16))
 
     def _click_plus(self):
         plus_button = WebDriverWait(self.browser, 10).until(
@@ -222,28 +205,9 @@ class LinkedinScraper:
             By.CSS_SELECTOR, ".artdeco-dropdown__content-inner li div.artdeco-dropdown__item"
         )
         for item in dropdown_items:
-            if "Se connecter" in item.text:
+            if "Se connecter" in item.text or "Connect" in item.text:
                 item.click()
                 break
 
     def close_browser(self):
         self.browser.quit()
-
-    def _accept_cookies_if_present(self):
-        """
-        Close the LinkedIn cookie banner if it appears. Without accepting, the page
-        may remain blocked and the results list may not load.
-        """
-        try:
-            accept_btn = WebDriverWait(self.browser, 3).until(
-                EC.element_to_be_clickable(
-                    (
-                        By.XPATH,
-                        "//button[contains(text(),'Accepter') or contains(text(),'Accept')]",
-                    )
-                )
-            )
-            accept_btn.click()
-            time.sleep(1)
-        except Exception:
-            pass
