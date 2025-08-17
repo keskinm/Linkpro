@@ -58,7 +58,7 @@ class LinkedinBot:
                         elif (profile["connect_or_follow"] == "Suivre") or (first_button == "Suivre"):
                             scraper.click_connect_on_plus()
                             did_connect = True
-                    except Exception:
+                    except Exception as exc:
                         continue
                     if did_connect:
                         scraper.send_invitation_with_message(self.message.replace("{first_name}", profile["first_name"]))
